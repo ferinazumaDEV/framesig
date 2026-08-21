@@ -1,0 +1,60 @@
+# framesig example config.
+#
+# Matches the synthetic clip produced by `framesig gen-sample` (a fake game
+# HUD). Run it end to end with:
+#
+#     framesig gen-sample sample.mp4
+#     framesig scan sample.mp4 -c examples/flash.yaml -o events.json --chart timeline.png
+#
+# Sampling rate in frames per second. framesig processes ~this many frames per
+# second of video regardless of the source frame rate.
+sample_fps: 10
+
+# Regions of interest. Bounds default to fractions of the frame (0..1), so the
+# same config works at any resolution. Add `unit: pixels` to use absolute px.
+regions:
+  hud_top:    { x: 0.00, y: 0.00, w: 1.00, h: 0.55 }
+  kill_feed:  { x: 0.08, y: 0.74, w: 0.84, h: 0.18 }
+  screen_mid: { x: 0.30, y: 0.58, w: 0.40, h: 0.12 }
+  corner:     { x: 0.82, y: 0.94, w: 0.18, h: 0.06 }
+
+# Each signature = a detector applied to a region + rules for turning the score
+# timeline into discrete events.
+signatures:
+  # A red flash across the top HUD: "relative red" is robust to compression and
+  # ignores absolute brightness.
+  - name: death_screen
+    region: hud_top
+    detector: channel_dominance
+    params: { channel: red, gain: 2.0 }
+    threshold: 0.30
+    min_duration: 0.15
+    merge_gap: 0.25
+
+  # A red bar in the lower kill-feed band. Red wraps around the hue circle, so
+  # two HSV ranges are used.
+  - name: kill_feed
+    region: kill_feed
+    detector: color_fraction
+    params:
+      hsv_low:  [0, 120, 70]
+      hsv_high: [10, 255, 255]
+      hsv_low2:  [170, 120, 70]
+      hsv_high2: [179, 255, 255]
+    threshold: 0.20
+    min_duration: 0.10
+    merge_gap: 0.20
+
+  # A bright white flash on a central panel.
+  - name: white_flash
+    region: screen_mid
+    detector: brightness
+    threshold: 0.75
+    min_duration: 0.10
+
+  # A hard scene cut, watched in a quiet corner that only changes on real cuts.
+  - name: scene_cut
+    region: corner
+    detector: scene_change
+    threshold: 0.15
+    min_duration: 0.0

@@ -39,8 +39,8 @@ dev = ["pytest>=7,<9"]
 framesig = "framesig.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/ferinazuma/framesig"
-Source = "https://github.com/ferinazuma/framesig"
+Homepage = "https://github.com/ferinazumaDEV/framesig"
+Source = "https://github.com/ferinazumaDEV/framesig"
 
 [tool.setuptools.packages.find]
 where = ["src"]

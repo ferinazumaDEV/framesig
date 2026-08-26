@@ -36,7 +36,7 @@ framesig doesn't know what a "kill" or a "death screen" looks like — and it do
 framesig needs only `numpy`, `opencv-python-headless` and `PyYAML`. (`ffmpeg` on your `PATH` is optional — it's used only to *generate* the sample clip in `gen-sample` / `demo`; scanning real videos does not need it.)
 
 ```bash
-git clone https://github.com/ferinazuma/framesig
+git clone https://github.com/ferinazumaDEV/framesig
 cd framesig
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"

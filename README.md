@@ -215,7 +215,7 @@ The suite includes an end-to-end test that renders the synthetic clip with ffmpe
 framesig is one of a set of small, dependency-light tools I build and maintain in the open — focused utilities that each do one job well and turn messy input into clean, structured output. If framesig fits into your pipeline, these siblings share the same engineering-first philosophy:
 
 - [The GEO Handbook](https://github.com/ferinazumaDEV/generative-engine-optimization-handbook) — the open reference on getting content cited by AI answer engines (ChatGPT, Perplexity, Google AI Overviews, Gemini, Copilot).
-- [structllm](https://github.com/ferinazumaDEV/structllm) — reliable structured output from any LLM: schema-validated JSON with tolerant repair and retries.
+- [typedout](https://github.com/ferinazumaDEV/typedout) — reliable structured output from any LLM: schema-validated JSON with tolerant repair and retries.
 - [politeclient](https://github.com/ferinazumaDEV/politeclient) — a polite, bulletproof HTTP client for Python: retries with backoff, per-host rate-limiting, caching, pagination.
 - [scaffld](https://github.com/ferinazumaDEV/scaffld) — scaffold fully-wired Python projects (tests, CI, pre-commit, license) from templates, with a TUI.
 - Hub & writing: [zentimes.es](https://zentimes.es).

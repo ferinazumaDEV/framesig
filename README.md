@@ -2,7 +2,7 @@
 
 **Find *when* something happens on screen — in any video, from any game or source — by its pixel signature.**
 
-![Python](https://img.shields.io/badge/python-3.9%2B-blue) ![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Tests](https://img.shields.io/badge/tests-60%20passing-brightgreen)
+![Python](https://img.shields.io/badge/python-3.9%2B-blue) ![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Tests](https://img.shields.io/badge/tests-88%20passing-brightgreen)
 
 framesig doesn't know what a "kill" or a "death screen" looks like — and it doesn't need to. You describe an event as **a region of the frame + a colour/brightness signature** in a few lines of YAML, and framesig scans the video and hands you back the **timestamps** where that signature appears. Red flash in the HUD, a coloured kill-feed row, a fade to black, a hard cut — same tiny config, no model, no training, no per-game code.
 
@@ -104,8 +104,10 @@ sample.mp4  640x360  15.0s  150 samples @ 10.0 fps  (cache)
 ```json
 {
   "video": "sample.mp4",
-  "meta": { "native_fps": 30.0, "width": 640, "height": 360,
-            "sample_fps": 10.0, "step": 3, "samples": 150, "duration": 15.0 },
+  "meta": { "native_fps": 30.0, "frame_count": 450, "width": 640, "height": 360,
+            "sample_fps": 10.0, "step": 3, "sample_period": 0.1,
+            "samples": 150, "duration": 15.0 },
+  "from_cache": false,
   "events": {
     "death_screen": [
       { "signature": "death_screen", "start": 2.0, "end": 2.4, "duration": 0.5,
@@ -123,10 +125,13 @@ A signature is a **detector** applied to a **region**, plus rules for turning th
 
 ```yaml
 sample_fps: 10                       # analyse ~10 frames per second of video
+cache_dir: .framesig_cache           # optional; default is a .framesig_cache
+                                     # folder next to the video
 
 regions:                             # bounds are fractions of the frame by default
   hud_top:    { x: 0.00, y: 0.00, w: 1.00, h: 0.55 }
   kill_feed:  { x: 0.08, y: 0.74, w: 0.84, h: 0.18 }
+  minimap:    { x: 1500, y: 800, w: 400, h: 250, unit: pixels }   # absolute pixels
 
 signatures:
   - name: death_screen
@@ -205,12 +210,12 @@ video ──▶ sub-sample frames ──▶ crop each region ──▶ detector 
 
 ```console
 $ pytest
-60 passed
+88 passed
 ```
 
-The suite includes an end-to-end test that renders the synthetic clip with ffmpeg and asserts framesig recovers exactly the events baked into it, at the right timestamps — plus unit tests for every detector, the event logic, config validation and the cache.
+The suite includes an end-to-end test that renders the synthetic clip with ffmpeg and asserts framesig recovers exactly the events baked into it, at the right timestamps — plus unit tests for every detector, the event logic, config validation, the scanner's error paths and the cache.
 
-## Part of the ferinazumaDEV ecosystem
+## Sibling tools
 
 framesig is one of a set of small, dependency-light tools I build and maintain in the open — focused utilities that each do one job well and turn messy input into clean, structured output. If framesig fits into your pipeline, these siblings share the same engineering-first philosophy:
 

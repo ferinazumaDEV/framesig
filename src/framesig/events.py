@@ -24,7 +24,10 @@ class Event:
         start: Timestamp (seconds) of the first sample in the run.
         end: Timestamp (seconds) of the last sample in the run.
         duration: ``end - start`` plus one sample period, so a single-sample
-            spike still reports a non-zero duration.
+            spike still reports a non-zero duration. The period is measured
+            from the timeline itself unless the caller supplies it; a timeline
+            of fewer than two samples has no measurable period, so pass
+            ``period=`` explicitly for one to be used.
         peak_t: Timestamp of the highest-scoring sample in the run.
         peak_score: The highest score in the run.
         mean_score: Mean score across the run's samples.
@@ -64,6 +67,7 @@ def detect_events(
     threshold: float,
     min_duration: float = 0.0,
     merge_gap: float = 0.0,
+    period: float | None = None,
 ) -> list[Event]:
     """Detect events in a single signature's score timeline.
 
@@ -76,6 +80,11 @@ def detect_events(
             out single-frame noise.
         merge_gap: Active runs separated by a gap no larger than this (seconds)
             are merged into one event. Useful when an effect flickers.
+        period: The spacing between samples, in seconds, added to every event's
+            duration so a single-sample spike is not zero-length. Defaults to
+            the median gap in ``timestamps``, which is ``0.0`` when fewer than
+            two samples were taken; :func:`framesig.scanner.detect_all` passes
+            the scan's own ``sample_period`` so that case is covered.
 
     Returns:
         A list of :class:`Event`, ordered by start time.
@@ -85,7 +94,9 @@ def detect_events(
     if not timestamps:
         return []
 
-    period = _sample_period(timestamps)
+    if period is None:
+        period = _sample_period(timestamps)
+    period = float(period)
 
     # 1. Collect maximal runs of consecutive active samples as index ranges.
     runs: list[tuple[int, int]] = []

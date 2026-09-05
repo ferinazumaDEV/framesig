@@ -17,6 +17,7 @@ from typing import Any, Callable, Mapping
 import cv2
 import numpy as np
 
+from ._coerce import as_bool
 from .errors import ConfigError
 
 # BGR channel indices, matching OpenCV's default byte order.
@@ -138,9 +139,27 @@ class ColorFraction(Detector):
 
     @staticmethod
     def _as_bound(field: str, value: list[int]) -> np.ndarray:
-        if value is None or len(value) != 3:
+        try:
+            length = len(value)
+        except TypeError:
+            length = -1
+        if length != 3:
             raise ConfigError(f"color_fraction: {field} must be a list of 3 integers [H, S, V]")
-        return np.array([int(v) for v in value], dtype=np.uint8)
+        try:
+            h, s, v = (int(item) for item in value)
+        except (ValueError, TypeError) as exc:
+            raise ConfigError(
+                f"color_fraction: {field} must be a list of 3 integers [H, S, V], "
+                f"got {value!r}"
+            ) from exc
+        # Range-check before the uint8 cast: numpy 2.x raises OverflowError while
+        # numpy 1.x silently wraps (256 -> 0), and both are inside our pin.
+        if not (0 <= h <= 179 and 0 <= s <= 255 and 0 <= v <= 255):
+            raise ConfigError(
+                f"color_fraction: {field} out of range; H in [0, 179], "
+                f"S and V in [0, 255], got {value}"
+            )
+        return np.array([h, s, v], dtype=np.uint8)
 
     def score(self, roi: np.ndarray) -> float:
         hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
@@ -187,7 +206,9 @@ class SceneChange(Detector):
 # --- registry ---------------------------------------------------------------
 
 _FACTORIES: dict[str, Callable[[Mapping[str, Any]], Detector]] = {
-    Brightness.type_name: lambda p: Brightness(invert=bool(p.get("invert", False))),
+    Brightness.type_name: lambda p: Brightness(
+        invert=as_bool("brightness: invert", p.get("invert", False))
+    ),
     ChannelDominance.type_name: lambda p: ChannelDominance(
         channel=str(p.get("channel", "red")), gain=float(p.get("gain", 1.0))
     ),
@@ -213,6 +234,11 @@ def build_detector(type_name: str, params: Mapping[str, Any] | None = None) -> D
         ConfigError: If ``type_name`` is unknown or the params are invalid.
     """
     params = params or {}
+    if not isinstance(params, Mapping):
+        raise ConfigError(
+            f"detector {type_name!r}: params must be a mapping, "
+            f"got {type(params).__name__}"
+        )
     try:
         factory = _FACTORIES[type_name]
     except KeyError:
@@ -226,3 +252,5 @@ def build_detector(type_name: str, params: Mapping[str, Any] | None = None) -> D
         raise ConfigError(
             f"detector {type_name!r}: missing required param {exc.args[0]!r}"
         ) from exc
+    except (ValueError, TypeError, OverflowError) as exc:
+        raise ConfigError(f"detector {type_name!r}: invalid params: {exc}") from exc

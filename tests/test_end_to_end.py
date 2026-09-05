@@ -89,3 +89,11 @@ def test_thresholds_are_reapplied_without_rescanning(sample_video, tmp_path):
     assert reused.from_cache is True
     events = detect_all(cfg, reused)
     assert sum(len(v) for v in events.values()) == 0
+
+
+def test_detect_all_passes_the_scan_sample_period(sample_video, config, tmp_path):
+    """The one-sample scene cut gets its duration from the scan's own period."""
+    result = scan_video(sample_video.path, config, cache_dir=str(tmp_path))
+    (cut,) = detect_all(config, result)["scene_cut"]
+    assert cut.samples == 1
+    assert cut.duration == pytest.approx(result.meta["sample_period"])

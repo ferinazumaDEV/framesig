@@ -206,5 +206,6 @@ def detect_all(config: Config, result: ScanResult) -> dict[str, list[Event]]:
             threshold=sig.threshold,
             min_duration=sig.min_duration,
             merge_gap=sig.merge_gap,
+            period=result.meta.get("sample_period"),
         )
     return out

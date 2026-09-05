@@ -88,3 +88,22 @@ def test_to_dict_is_json_friendly():
         "signature", "start", "end", "duration",
         "peak_t", "peak_score", "mean_score", "samples",
     }
+
+
+def test_single_sample_timeline_has_no_measurable_period():
+    """Documented edge: one sample gives no spacing to infer, so duration is 0."""
+    (event,) = detect_events("s", [0.0], [1.0], threshold=0.5)
+    assert event.duration == 0.0
+
+
+def test_explicit_period_gives_a_single_sample_spike_a_duration():
+    (event,) = detect_events("s", [0.0], [1.0], threshold=0.5, period=0.1)
+    assert event.duration == pytest.approx(0.1)
+    # ...and it now survives a min_duration filter that used to drop it.
+    assert len(detect_events("s", [0.0], [1.0], threshold=0.5, period=0.1, min_duration=0.05)) == 1
+
+
+def test_explicit_period_overrides_the_measured_one():
+    ts = _grid(4)
+    events = detect_events("s", ts, [0, 0.9, 0.9, 0], threshold=0.5, period=0.5)
+    assert events[0].duration == pytest.approx(0.1 + 0.5)

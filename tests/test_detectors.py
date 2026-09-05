@@ -110,3 +110,42 @@ def test_registry_rejects_unknown_type():
 def test_registry_reports_missing_required_param():
     with pytest.raises(ConfigError):
         build_detector("color_fraction", {})  # missing hsv_low/hsv_high
+
+
+def test_registry_rejects_non_mapping_params():
+    with pytest.raises(ConfigError, match="params must be a mapping"):
+        build_detector("brightness", [1, 2])
+
+
+def test_registry_reports_non_numeric_param():
+    with pytest.raises(ConfigError, match="invalid params"):
+        build_detector("channel_dominance", {"gain": "fast"})
+    with pytest.raises(ConfigError, match="invalid params"):
+        build_detector("channel_dominance", {"gain": None})
+
+
+def test_brightness_factory_rejects_non_boolean_invert():
+    """bool("false") is True, so a quoted YAML string must be rejected."""
+    with pytest.raises(ConfigError, match="must be true or false"):
+        build_detector("brightness", {"invert": "false"})
+
+
+@pytest.mark.parametrize(
+    "bounds",
+    [
+        {"hsv_low": [0, 0, 0], "hsv_high": [179, 255, 256]},  # V over 255
+        {"hsv_low": [0, 0, 0], "hsv_high": [180, 255, 255]},  # H over 179
+        {"hsv_low": [-1, 0, 0], "hsv_high": [179, 255, 255]},  # negative
+    ],
+)
+def test_color_fraction_rejects_out_of_range_bounds(bounds):
+    """Out-of-range bounds overflow on numpy 2.x and wrap on numpy 1.x."""
+    with pytest.raises(ConfigError, match="out of range"):
+        build_detector("color_fraction", bounds)
+
+
+def test_color_fraction_rejects_non_integer_bounds():
+    with pytest.raises(ConfigError, match="3 integers"):
+        build_detector("color_fraction", {"hsv_low": [0, 0, "x"], "hsv_high": [10, 255, 255]})
+    with pytest.raises(ConfigError, match="3 integers"):
+        build_detector("color_fraction", {"hsv_low": 5, "hsv_high": [10, 255, 255]})

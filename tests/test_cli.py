@@ -68,3 +68,22 @@ def test_gen_sample_writes_video(tmp_path):
     out = tmp_path / "clip.mp4"
     assert main(["gen-sample", str(out)]) == 0
     assert out.exists() and out.stat().st_size > 0
+
+
+def test_bad_sample_fps_flag_is_an_error(sample_video, capsys):
+    """--sample-fps bypasses parse_config, so the flag needs its own guard."""
+    for value in ("0", "-5"):
+        code = main(
+            [
+                "scan",
+                str(sample_video.path),
+                "-c",
+                str(EXAMPLE_CONFIG),
+                "--sample-fps",
+                value,
+                "--no-cache",
+                "-q",
+            ]
+        )
+        assert code == 2
+        assert "--sample-fps must be positive" in capsys.readouterr().err

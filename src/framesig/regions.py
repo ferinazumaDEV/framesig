@@ -13,6 +13,7 @@ from typing import Any, Mapping
 
 import numpy as np
 
+from ._coerce import as_number
 from .errors import ConfigError
 
 Box = tuple[int, int, int, int]  # (x0, y0, x1, y1) in pixels
@@ -61,6 +62,11 @@ class Region:
     @classmethod
     def from_mapping(cls, name: str, data: Mapping[str, Any]) -> "Region":
         """Build a region from a parsed YAML mapping."""
+        if not isinstance(data, Mapping):
+            raise ConfigError(
+                f"region {name!r}: must be a mapping with x, y, w, h, "
+                f"got {type(data).__name__}"
+            )
         allowed = {"x", "y", "w", "h", "unit"}
         unknown = set(data) - allowed
         if unknown:
@@ -69,18 +75,19 @@ class Region:
                 f"allowed keys are {sorted(allowed)}"
             )
         try:
-            return cls(
-                name=name,
-                x=float(data["x"]),
-                y=float(data["y"]),
-                w=float(data["w"]),
-                h=float(data["h"]),
-                unit=str(data.get("unit", "fraction")),
-            )
+            raw_x, raw_y, raw_w, raw_h = (data[key] for key in ("x", "y", "w", "h"))
         except KeyError as exc:
             raise ConfigError(
                 f"region {name!r}: missing required key {exc.args[0]!r}"
             ) from exc
+        return cls(
+            name=name,
+            x=as_number(f"region {name!r}: x", raw_x),
+            y=as_number(f"region {name!r}: y", raw_y),
+            w=as_number(f"region {name!r}: w", raw_w),
+            h=as_number(f"region {name!r}: h", raw_h),
+            unit=str(data.get("unit", "fraction")),
+        )
 
     def resolve(self, frame_w: int, frame_h: int) -> Box:
         """Return the integer pixel box ``(x0, y0, x1, y1)`` for a given frame size.

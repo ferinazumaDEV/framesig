@@ -114,3 +114,49 @@ def test_empty_yaml_raises(tmp_path):
     path.write_text("", encoding="utf-8")
     with pytest.raises(ConfigError, match="empty"):
         load_config(path)
+
+
+# --- type-invalid values must surface as ConfigError, never a raw exception ---
+
+
+def test_non_numeric_sample_fps_raises():
+    with pytest.raises(ConfigError, match="sample_fps must be a number"):
+        parse_config({**VALID, "sample_fps": "fast"})
+
+
+def test_non_numeric_threshold_raises():
+    bad = {**VALID, "signatures": [{**VALID["signatures"][0], "threshold": "high"}]}
+    with pytest.raises(ConfigError, match="threshold must be a number"):
+        parse_config(bad)
+
+
+def test_non_numeric_region_bound_raises():
+    bad = {**VALID, "regions": {"full": {"x": "left", "y": 0, "w": 1, "h": 1}}}
+    with pytest.raises(ConfigError, match="x must be a number"):
+        parse_config(bad)
+
+
+def test_region_that_is_not_a_mapping_raises():
+    with pytest.raises(ConfigError, match="must be a mapping"):
+        parse_config({**VALID, "regions": {"full": None}})
+
+
+def test_params_that_are_not_a_mapping_raise():
+    bad = {**VALID, "signatures": [{**VALID["signatures"][0], "params": [1, 2]}]}
+    with pytest.raises(ConfigError, match="'params' must be a mapping"):
+        parse_config(bad)
+
+
+def test_non_numeric_detector_param_raises():
+    bad = {
+        **VALID,
+        "signatures": [{**VALID["signatures"][0], "params": {"gain": "fast"}}],
+    }
+    with pytest.raises(ConfigError, match="invalid params"):
+        parse_config(bad)
+
+
+def test_unknown_top_level_key_raises():
+    """A typo at the top level must not be silently ignored (it costs a rescan)."""
+    with pytest.raises(ConfigError, match="sampel_fps"):
+        parse_config({**VALID, "sampel_fps": 20})

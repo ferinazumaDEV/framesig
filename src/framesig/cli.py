@@ -18,7 +18,7 @@ from typing import Any, Sequence
 from . import __version__
 from .config import Config, load_config, parse_config
 from .detectors import available_detectors
-from .errors import FramesigError
+from .errors import ConfigError, FramesigError
 from .events import Event
 from .scanner import ScanResult, detect_all, scan_video
 from .videogen import generate_sample_video
@@ -121,6 +121,10 @@ def _run_scan(config: Config, video: str, *, use_cache: bool) -> tuple[ScanResul
 def cmd_scan(args: argparse.Namespace) -> int:
     config = load_config(args.config)
     if args.sample_fps is not None:
+        # Mutating the dataclass skips parse_config's validation, so repeat it
+        # here: the flag must obey the same rule as the YAML key.
+        if args.sample_fps <= 0:
+            raise ConfigError("--sample-fps must be positive")
         config.sample_fps = float(args.sample_fps)
     result, events = _run_scan(config, args.video, use_cache=not args.no_cache)
 

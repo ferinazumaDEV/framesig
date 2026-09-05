@@ -27,9 +27,12 @@ from typing import Any, Mapping
 
 import yaml
 
+from ._coerce import as_number
 from .detectors import Detector, build_detector
 from .errors import ConfigError
 from .regions import Region
+
+_ALLOWED_TOP_KEYS = {"sample_fps", "regions", "signatures", "cache_dir"}
 
 _ALLOWED_SIGNATURE_KEYS = {
     "name",
@@ -116,14 +119,23 @@ def _parse_signature(raw: Mapping[str, Any], regions: Mapping[str, Region]) -> S
             f"declared regions: {sorted(regions)}"
         )
 
-    detector = build_detector(detector_type, raw.get("params") or {})
+    params = raw.get("params") or {}
+    if not isinstance(params, Mapping):
+        raise ConfigError(
+            f"signature {name!r}: 'params' must be a mapping, "
+            f"got {type(params).__name__}"
+        )
+
+    detector = build_detector(detector_type, params)
     return Signature(
         name=name,
         region=regions[region_name],
         detector=detector,
-        threshold=float(raw.get("threshold", 0.5)),
-        min_duration=float(raw.get("min_duration", 0.0)),
-        merge_gap=float(raw.get("merge_gap", 0.0)),
+        threshold=as_number(f"signature {name!r}: threshold", raw.get("threshold", 0.5)),
+        min_duration=as_number(
+            f"signature {name!r}: min_duration", raw.get("min_duration", 0.0)
+        ),
+        merge_gap=as_number(f"signature {name!r}: merge_gap", raw.get("merge_gap", 0.0)),
     )
 
 
@@ -136,7 +148,14 @@ def parse_config(data: Mapping[str, Any]) -> Config:
     if not isinstance(data, Mapping):
         raise ConfigError("top-level config must be a mapping")
 
-    sample_fps = float(data.get("sample_fps", 5.0))
+    unknown = set(data) - _ALLOWED_TOP_KEYS
+    if unknown:
+        raise ConfigError(
+            f"unknown top-level keys {sorted(unknown)}; "
+            f"allowed: {sorted(_ALLOWED_TOP_KEYS)}"
+        )
+
+    sample_fps = as_number("sample_fps", data.get("sample_fps", 5.0))
     if sample_fps <= 0:
         raise ConfigError("sample_fps must be positive")
 

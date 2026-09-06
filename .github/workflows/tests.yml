@@ -1,0 +1,54 @@
+name: tests
+
+# framesig's suite includes an end-to-end test that renders a synthetic clip with
+# ffmpeg and asserts the detector recovers exactly the events baked into it, at
+# the right timestamps. That test is the one worth having in CI, and it is the
+# reason ffmpeg is installed here: without it those cases skip, and a green run
+# would mean less than it appears to.
+#
+# opencv-python-headless is what the package already depends on, so no display
+# and no X libraries are needed on the runner.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Confirm ffmpeg is on PATH before trusting a green run
+        run: ffmpeg -version | head -1
+
+      - name: Install the package and its test extra
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run the suite
+        run: python -m pytest -q
+
+      - name: The CLI starts and reports its version
+        run: framesig --version

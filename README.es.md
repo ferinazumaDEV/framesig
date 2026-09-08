@@ -1,3 +1,4 @@
+<!-- synced-from: 001f660e6b3b12e52d59a05745ec46d94188f664 -->
 # framesig
 
 **Español** · [English](README.md)

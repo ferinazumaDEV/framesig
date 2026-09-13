@@ -41,7 +41,7 @@ from .regions import Region
 from .scanner import ScanResult, detect_all, scan_video
 from .videogen import GroundTruth, SampleVideo, generate_sample_video
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = [
     "__version__",

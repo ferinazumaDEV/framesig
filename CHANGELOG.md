@@ -6,6 +6,8 @@ Notable changes, newest first. The format follows
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-09-13
+
 ### Fixed
 
 - **A corrupt cache file no longer breaks a scan.** `ScoreCache.load` documented

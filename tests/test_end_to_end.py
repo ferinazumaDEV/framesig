@@ -6,6 +6,7 @@ that framesig recovers exactly the events baked into it, at the right times.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -97,3 +98,31 @@ def test_detect_all_passes_the_scan_sample_period(sample_video, config, tmp_path
     (cut,) = detect_all(config, result)["scene_cut"]
     assert cut.samples == 1
     assert cut.duration == pytest.approx(result.meta["sample_period"])
+
+
+def test_scan_recomputes_when_the_cache_file_is_corrupt(sample_video, config, tmp_path):
+    """Audit finding F04, the half the unit tests do not cover.
+
+    tests/test_cache_resilience.py proves ScoreCache.load() treats corrupt
+    bytes and useless payloads as a miss. This proves the *consumer* survives
+    them: a scan over a poisoned cache must recompute, return the same scores as
+    a clean scan, and leave a valid cache file behind -- not raise, and not
+    report from_cache=True for data it could not have read.
+    """
+    first = scan_video(sample_video.path, config, cache_dir=str(tmp_path))
+    assert first.from_cache is False
+    cache_files = list(Path(tmp_path).glob("scores_*.json"))
+    assert len(cache_files) == 1, cache_files
+    cache_file = cache_files[0]
+
+    for garbage in (b"\xff\xfe", b'{"version": 2}', b'{"version": 2, "scores"'):
+        cache_file.write_bytes(garbage)
+        again = scan_video(sample_video.path, config, cache_dir=str(tmp_path))
+        assert again.from_cache is False, f"served a hit from {garbage!r}"
+        assert again.timestamps == first.timestamps
+        assert again.scores == first.scores
+        rewritten = json.loads(cache_file.read_text(encoding="utf-8"))
+        assert rewritten["version"] == 2 and rewritten["scores"] == first.scores
+
+    # And the repaired cache is a real hit again.
+    assert scan_video(sample_video.path, config, cache_dir=str(tmp_path)).from_cache is True

@@ -36,7 +36,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7,<9"]
+dev = ["pytest>=7,<10"]
 
 [project.scripts]
 framesig = "framesig.cli:main"

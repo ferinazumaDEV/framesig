@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "framesig"
-version = "0.1.1"
+version = "0.1.2"
 description = "Detect on-screen events in any video by pixel signature — declarative YAML, cached scores, game-agnostic."
 readme = "README.md"
 # Version policy: this floor is a minimum, not a recommendation, and everything below 3.11 is

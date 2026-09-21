@@ -6,6 +6,15 @@ Notable changes, newest first. The format follows
 
 ## [Unreleased]
 
+## [0.1.2] — 2026-09-21
+
+### Changed
+
+- **`opencv-python-headless` 5.x is now installable** (`>=4.8,<6`, was `<5`). This is a runtime dependency, so
+  until now installing framesig held you on opencv 4 even though 5 is the current release — a constraint the
+  published wheel imposed on every user. Backed by a run: a clean virtualenv with `opencv-python-headless==5.0.0.93`
+  installed over the package runs the full suite green (102 of 102, 2026-09-21).
+
 ### Deprecated
 
 - **Python below 3.11 is compatibility, not support.** The floor becomes **3.11 in 0.2.0** (3.10 reaches
